@@ -809,11 +809,13 @@ impl<A: Array> SmallVec<A> where A::Item: Clone {
     /// assert_eq!(v, SmallVec::from_buf(['d', 'd']));
     /// ```
     pub fn from_elem(elem: A::Item, n: usize) -> Self {
+        use std::mem::{self, ManuallyDrop};
+
         if n > A::size() {
             vec![elem; n].into()
         } else {
             unsafe {
-                let mut arr: A = ::std::mem::uninitialized();
+                let mut arr: ManuallyDrop<A> = ManuallyDrop::new(mem::uninitialized());
                 let ptr = arr.ptr_mut();
 
                 for i in 0..n as isize {
@@ -821,7 +823,7 @@ impl<A: Array> SmallVec<A> where A::Item: Clone {
                 }
 
                 SmallVec {
-                    data: Inline { array: arr },
+                    data: Inline { array: ManuallyDrop::into_inner(arr) },
                     len: n,
                 }
             }
