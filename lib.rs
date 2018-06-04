@@ -333,7 +333,7 @@ impl<A: Array> SmallVec<A> {
     #[inline]
     pub fn with_capacity(n: usize) -> Self {
         let mut v = SmallVec::new();
-        v.reserve_exact(n);
+        v.grow(n);
         v
     }
 
@@ -750,8 +750,13 @@ impl<A: Array> SmallVec<A> where A::Item: Copy {
     ///
     /// For slices of `Copy` types, this is more efficient than `SmallVec::from(slice)`.
     pub fn from_slice(slice: &[A::Item]) -> Self {
-        let mut vec = Self::new();
-        vec.extend_from_slice(slice);
+        let mut vec = Self::with_capacity(slice.len());
+
+        unsafe {
+            ptr::copy_nonoverlapping(slice.as_ptr(), vec.data.ptr_mut(), slice.len());
+            vec.set_len(slice.len());
+        }
+
         vec
     }
 
